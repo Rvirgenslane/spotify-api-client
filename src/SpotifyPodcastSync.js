@@ -1,4 +1,6 @@
-// Read configuration from config.json in the same folder
+// ==========================================
+// CONFIGURATION LOAD
+// ==========================================
 function loadConfig() {
   const fm = FileManager.iCloud();
   const dir = fm.documentsDirectory();
@@ -17,11 +19,9 @@ function loadConfig() {
 const CONFIG = loadConfig();
 const CLIENT_ID = CONFIG.CLIENT_ID;
 const CLIENT_SECRET = CONFIG.CLIENT_SECRET;
+const REFRESH_TOKEN = CONFIG.REFRESH_TOKEN; // Needed for user playlist modification
 const PLAYLIST_ID = CONFIG.PLAYLIST_ID;
 const RSS_FEED_URL = CONFIG.RSS_FEED_URL;
-
-// Rest of the main() and helper logic...
-
 
 // ==========================================
 // MAIN WORKFLOW
@@ -40,10 +40,10 @@ async function main() {
   }
   console.log(`Latest Episode: "${episodeTitle}"`);
 
-  // 2. Get Spotify Access Token (Client Credentials Flow)
-  const token = await getSpotifyToken();
+  // 2. Get User Access Token via Refresh Token
+  const token = await getSpotifyUserToken();
   if (!token) {
-    console.log("Failed to obtain Spotify access token.");
+    console.log("Failed to obtain Spotify user token.");
     return;
   }
 
@@ -59,6 +59,8 @@ async function main() {
   const success = await addToPlaylist(token, PLAYLIST_ID, episodeUri);
   if (success) {
     console.log("Successfully added episode to playlist!");
+  } else {
+    console.log("Failed to add episode to playlist.");
   }
 }
 
@@ -72,12 +74,11 @@ function extractLatestTitle(xml) {
   return match ? match[1].trim() : null;
 }
 
-// OAuth Client Credentials Request
-async function getSpotifyToken() {
+// Obtain Access Token with user permissions using Refresh Token
+async function getSpotifyUserToken() {
   const req = new Request("https://accounts.spotify.com/api/token");
   req.method = "POST";
   
-  // Base64 Encode client_id:client_secret natively using Scriptable's Data API
   const credentials = `${CLIENT_ID}:${CLIENT_SECRET}`;
   const base64Auth = Data.fromString(credentials).toBase64String();
 
@@ -85,9 +86,13 @@ async function getSpotifyToken() {
     "Authorization": `Basic ${base64Auth}`,
     "Content-Type": "application/x-www-form-urlencoded"
   };
-  req.body = "grant_type=client_credentials";
+  req.body = `grant_type=refresh_token&refresh_token=${encodeURIComponent(REFRESH_TOKEN)}`;
 
   const json = await req.loadJSON();
+  if (json.error) {
+    console.log(`Auth Error: ${json.error_description || json.error}`);
+    return null;
+  }
   return json.access_token || null;
 }
 
