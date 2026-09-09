@@ -1,0 +1,8 @@
+# Ignore secret configuration files
+config.json
+
+# macOS OS files
+.DS_Store
+
+# Node / Local modules if testing with Node
+node_modules/
