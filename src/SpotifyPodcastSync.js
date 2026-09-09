@@ -1,10 +1,27 @@
-// ==========================================
-// CONFIGURATION
-// ==========================================
-const CLIENT_ID = "YOUR_SPOTIFY_CLIENT_ID";
-const CLIENT_SECRET = "YOUR_SPOTIFY_CLIENT_SECRET";
-const PLAYLIST_ID = "YOUR_SPOTIFY_PLAYLIST_ID";
-const RSS_FEED_URL = "HTTPS_URL_TO_YOUR_PODCAST_RSS_FEED";
+// Read configuration from config.json in the same folder
+function loadConfig() {
+  const fm = FileManager.iCloud();
+  const dir = fm.documentsDirectory();
+  const configPath = fm.joinPath(dir, "config.json");
+
+  if (!fm.fileExists(configPath)) {
+    throw new Error("config.json not found! Copy config.template.json to config.json and fill in your keys.");
+  }
+
+  // Ensure file is downloaded from iCloud before reading
+  fm.downloadFileFromiCloud(configPath);
+  const raw = fm.readString(configPath);
+  return JSON.parse(raw);
+}
+
+const CONFIG = loadConfig();
+const CLIENT_ID = CONFIG.CLIENT_ID;
+const CLIENT_SECRET = CONFIG.CLIENT_SECRET;
+const PLAYLIST_ID = CONFIG.PLAYLIST_ID;
+const RSS_FEED_URL = CONFIG.RSS_FEED_URL;
+
+// Rest of the main() and helper logic...
+
 
 // ==========================================
 // MAIN WORKFLOW
